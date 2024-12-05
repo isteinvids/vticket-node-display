@@ -8,6 +8,8 @@ After CDing to working directory:
 - `npm run build` - Builds the Typescript to JS
 - `node bin/start.js` - Starts Socket.IO server
 
+When running `node bin/start.js`, /public/ will be served on port 3000. This is the client side of the application, used for demonstration purposes.
+
 ## Usage
 
 The code will loop through the available COM ports on the PC to find which ports the hardware is on.  This is by matching the hardware VendorID from values in the .env file.
@@ -49,5 +51,3 @@ Display text example:
 ```
 
 See `public/index.html` for more examples (including printing & cash drawer examples)
-
-When running `node bin/start.js`, the public directory is hosted on localhost:3000. This is convenient for testing the client-side code!
