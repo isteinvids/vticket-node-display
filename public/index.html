@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en-gb">
+
+  <head>
+    <meta charset="utf-8">
+    <title>NodeJS Test</title>
+
+    <style>
+      body {
+        font-family: "Arial Black", "sans-serif";
+        font-size: 1em;
+      }
+
+      #formContainer {
+        background-color: #f8f8f8;
+        border: 1px solid #444444;
+        padding: 20px 20px 0 20px;
+        display: inline-block;
+      }
+
+      #formContainer input[type="text"] {
+        font-size: 1.3em;
+        font-family: "Courier New", monospace;
+        margin-bottom: 10px;
+        width: 500px;
+      }
+
+      #formContainer input[type="submit"] {
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        width: 220px;
+        height: 40px;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <h2>Node / JS Scripting Test</h2>
+
+    <p>Hardware Server Status: <span id="portStatus">Connecting...</span></p>
+
+    <div id="formContainer">
+
+      <form id="comPortForm">
+        <label for="comPort">COM Port:</label><br>
+        <input type="text" id="comPort" name="comPort" maxlength="20" value="COM3"><br>
+        <input type="submit" value="Connect">
+      </form>
+
+      <form id="updateCustomerDisplay">
+        <label for="textOne">First line:</label><br>
+        <input type="text" id="textOne" name="textOne" maxlength="20"><br>
+        <label for="textTwo">Last line:</label><br>
+        <input type="text" id="textTwo" name="textTwo" maxlength="20"><br>
+        <input type="submit" value="Update Display">
+      </form>
+
+      <form id="clearCustomerDisplay">
+        <input type="submit" value="Clear Display">
+      </form>
+
+      </br>
+
+    </div>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+
+    <script>
+      $(document).ready(function () {
+        let socketConnected = false;
+        const socket = io('http://localhost:3000/');
+        window.socket = socket;
+        socket.on('connect', function () {
+          console.log("connected to node server");
+          $('#portStatus').html('Connected');
+          socketConnected = true;
+
+          socket.emit('setcustomhardware', 'display', {
+            path: 'COM3',
+            options: {
+              baudRate: 9600,
+              dataBits: 8,
+              stopBits: 1,
+              parity: 'none'
+            }
+          });
+        });
+        socket.on('disconnect', function () {
+          console.log("disconnected from node server");
+          $('#portStatus').html('Disconnected');
+          socketConnected = false;
+        });
+        socket.on('hardware/error', (err) => {
+          alert((err && err.errorMessage) || '???');
+          console.log(err);
+        });
+        socket.on('display/text', () => {
+          console.log('show text done');
+        });
+        socket.on('display/clear', () => {
+          console.log('clear text done');
+        });
+        $('#comPortForm').submit(() => {
+          if (!socketConnected) {
+            alert('Hardware server not running');
+          } else {
+            socket.emit('setcustomhardware', 'display', {
+              path: $('#comPort').val(),
+              options: {
+                baudRate: 9600,
+                dataBits: 8,
+                stopBits: 1,
+                parity: 'none'
+              },
+              custOptions: {
+                lineOnePrefix: 'Y',
+                lineTwoPrefix: 'Y'
+              }
+            });
+          }
+          return false;
+        });
+        $('#updateCustomerDisplay').submit(() => {
+          if (!socketConnected) {
+            alert('Hardware server not running');
+          } else {
+            const text = {
+              one: $('#textOne').val(),
+              two: $('#textTwo').val()
+            };
+            socket.emit('display/text', text);
+          }
+          return false;
+        });
+        $('#clearCustomerDisplay').submit(() => {
+          if (!socketConnected) {
+            alert('Hardware server not running');
+          } else {
+            socket.emit('display/clear');
+          }
+          return false;
+        });
+        $('#openCashDrawer').submit(() => {
+          if (!socketConnected) {
+            alert('Hardware server not running');
+          } else {
+            socket.emit('trigger/open', $('#cashChar').val());
+          }
+          return false;
+        });
+      });
+
+
+      const zpl = `^XA
+^FWR 
+^CFD,40
+
+^FO430,200^FD\${dat.name}^FS
+^FO380,200^FD\${dat.date}^FS
+
+^FO300,200^FDTime:^FS
+^FO250,200^FDCompartment:^FS
+
+^FO300,700^FD\${dat.time}^FS
+^FO250,700^FD\${dat.compartment}^FS
+
+^CFA,30
+^FO170,200^FDBooking ref:^FS
+^FO170,700^FD\${dat.refNo}^FS
+
+^FWN
+^XZ`;
+    </script>
+
+  </body>
+
+</html>
